@@ -1,16 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as WebBrowser from "expo-web-browser";
-import * as Google from "expo-auth-session/providers/google";
 import { useAuth } from "../context/AuthContext";
 
-WebBrowser.maybeCompleteAuthSession();
-
 const GOOGLE_CLIENT_ID = "899826716735-rn5cpog5aj1fmi9vplg1n81nt3uiaj0p.apps.googleusercontent.com";
+
+declare global {
+  interface Window {
+    google: any;
+    handleGoogleCredential: (response: any) => void;
+  }
+}
 
 export default function AuthScreen() {
   const { login, register, loginWithGoogle } = useAuth();
@@ -20,21 +23,36 @@ export default function AuthScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
-    clientId: GOOGLE_CLIENT_ID,
-    webClientId: GOOGLE_CLIENT_ID,
-    redirectUri: "https://styabu-production.up.railway.app",
-  });
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
 
-  React.useEffect(() => {
-    if (googleResponse?.type === "success") {
-      const { id_token } = googleResponse.params;
+    window.handleGoogleCredential = async (response: any) => {
       setLoading(true);
-      loginWithGoogle(id_token)
-        .catch((e: any) => Alert.alert("Error", e.message))
-        .finally(() => setLoading(false));
-    }
-  }, [googleResponse]);
+      try {
+        await loginWithGoogle(response.credential);
+      } catch (e: any) {
+        Alert.alert("Error", e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.onload = () => {
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: window.handleGoogleCredential,
+      });
+      window.google.accounts.id.renderButton(
+        document.getElementById("google-signin-btn"),
+        { theme: "filled_white", size: "large", width: 340, text: "continue_with" }
+      );
+    };
+    document.body.appendChild(script);
+    return () => { document.body.removeChild(script); };
+  }, []);
 
   const submit = async () => {
     setLoading(true);
@@ -59,9 +77,11 @@ export default function AuthScreen() {
           <Text style={styles.tagline}>Build together</Text>
         </View>
 
-        <TouchableOpacity style={styles.googleBtn} onPress={() => promptGoogleAsync()} disabled={loading}>
-          <Text style={styles.googleBtnText}>🔵  Continue with Google</Text>
-        </TouchableOpacity>
+        {Platform.OS === "web" ? (
+          <View style={styles.googleWrapper}>
+            <div id="google-signin-btn" />
+          </View>
+        ) : null}
 
         <View style={styles.divider}>
           <View style={styles.dividerLine} />
@@ -122,14 +142,7 @@ const styles = StyleSheet.create({
   header: { alignItems: "center", marginBottom: 32 },
   logo: { fontSize: 40, fontWeight: "900", color: "#fff", letterSpacing: -1 },
   tagline: { color: "#a855f7", fontSize: 15, marginTop: 4 },
-  googleBtn: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  googleBtnText: { color: "#000", fontWeight: "700", fontSize: 15 },
+  googleWrapper: { alignItems: "center", marginBottom: 16 },
   divider: { flexDirection: "row", alignItems: "center", marginBottom: 16, gap: 8 },
   dividerLine: { flex: 1, height: 1, backgroundColor: "#ffffff15" },
   dividerText: { color: "#555", fontSize: 13 },
