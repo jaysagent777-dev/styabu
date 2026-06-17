@@ -29,6 +29,9 @@ export const api = {
   login: (email: string, password: string) =>
     request("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
 
+  googleLogin: (idToken: string) =>
+    request("/auth/google", { method: "POST", body: JSON.stringify({ idToken }) }),
+
   // Ideas
   getIdeas: (search?: string, tag?: string) => {
     const params = new URLSearchParams();

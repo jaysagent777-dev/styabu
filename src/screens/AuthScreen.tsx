@@ -4,15 +4,36 @@ import {
   StyleSheet, KeyboardAvoidingView, Platform, Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
 import { useAuth } from "../context/AuthContext";
 
+WebBrowser.maybeCompleteAuthSession();
+
+const GOOGLE_CLIENT_ID = "REPLACE_WITH_YOUR_GOOGLE_CLIENT_ID";
+
 export default function AuthScreen() {
-  const { login, register } = useAuth();
+  const { login, register, loginWithGoogle } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
+    clientId: GOOGLE_CLIENT_ID,
+    webClientId: GOOGLE_CLIENT_ID,
+  });
+
+  React.useEffect(() => {
+    if (googleResponse?.type === "success") {
+      const { id_token } = googleResponse.params;
+      setLoading(true);
+      loginWithGoogle(id_token)
+        .catch((e: any) => Alert.alert("Error", e.message))
+        .finally(() => setLoading(false));
+    }
+  }, [googleResponse]);
 
   const submit = async () => {
     setLoading(true);
@@ -35,6 +56,16 @@ export default function AuthScreen() {
         <View style={styles.header}>
           <Text style={styles.logo}>Styabu</Text>
           <Text style={styles.tagline}>Build together</Text>
+        </View>
+
+        <TouchableOpacity style={styles.googleBtn} onPress={() => promptGoogleAsync()} disabled={loading}>
+          <Text style={styles.googleBtnText}>🔵  Continue with Google</Text>
+        </TouchableOpacity>
+
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
         </View>
 
         <View style={styles.tabs}>
@@ -87,9 +118,20 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0f0f1a" },
   inner: { flex: 1, justifyContent: "center", paddingHorizontal: 24 },
-  header: { alignItems: "center", marginBottom: 40 },
+  header: { alignItems: "center", marginBottom: 32 },
   logo: { fontSize: 40, fontWeight: "900", color: "#fff", letterSpacing: -1 },
   tagline: { color: "#a855f7", fontSize: 15, marginTop: 4 },
+  googleBtn: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  googleBtnText: { color: "#000", fontWeight: "700", fontSize: 15 },
+  divider: { flexDirection: "row", alignItems: "center", marginBottom: 16, gap: 8 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: "#ffffff15" },
+  dividerText: { color: "#555", fontSize: 13 },
   tabs: { flexDirection: "row", backgroundColor: "#1a1a2e", borderRadius: 12, padding: 4, marginBottom: 24 },
   tab: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 10 },
   tabActive: { backgroundColor: "#7c3aed" },
