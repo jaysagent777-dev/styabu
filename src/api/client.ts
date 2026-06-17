@@ -32,6 +32,9 @@ export const api = {
   googleLogin: (idToken: string) =>
     request("/auth/google", { method: "POST", body: JSON.stringify({ idToken }) }),
 
+  googleRegister: (name: string, email: string, googleId: string) =>
+    request("/auth/google/register", { method: "POST", body: JSON.stringify({ name, email, googleId }) }),
+
   // Ideas
   getIdeas: (search?: string, tag?: string) => {
     const params = new URLSearchParams();

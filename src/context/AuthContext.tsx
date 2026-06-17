@@ -8,7 +8,8 @@ type AuthContextType = {
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
-  loginWithGoogle: (idToken: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<{ newUser: boolean; googleData?: { name: string; email: string; googleId: string } }>;
+  registerWithGoogle: (name: string, email: string, googleId: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
 };
@@ -51,6 +52,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithGoogle = async (idToken: string) => {
     const res = await api.googleLogin(idToken);
+    if (res.newUser) return res; // frontend handles redirect to signup
+    await AsyncStorage.setItem("token", res.token);
+    await AsyncStorage.setItem("user", JSON.stringify(res.user));
+    setToken(res.token);
+    setUser(res.user);
+    return res;
+  };
+
+  const registerWithGoogle = async (name: string, email: string, googleId: string) => {
+    const res = await api.googleRegister(name, email, googleId);
     await AsyncStorage.setItem("token", res.token);
     await AsyncStorage.setItem("user", JSON.stringify(res.user));
     setToken(res.token);
@@ -65,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, loginWithGoogle, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, register, loginWithGoogle, registerWithGoogle, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

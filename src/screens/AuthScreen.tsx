@@ -13,8 +13,9 @@ declare global {
 }
 
 export default function AuthScreen() {
-  const { login, register, loginWithGoogle } = useAuth();
+  const { login, register, loginWithGoogle, registerWithGoogle } = useAuth();
   const [screen, setScreen] = useState<"landing" | "signup" | "signin">("landing");
+  const [googleData, setGoogleData] = useState<{ name: string; email: string; googleId: string } | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,7 +25,15 @@ export default function AuthScreen() {
     if (Platform.OS !== "web") return;
     window.handleGoogleCredential = async (response: any) => {
       setLoading(true);
-      try { await loginWithGoogle(response.credential); }
+      try {
+        const res = await loginWithGoogle(response.credential);
+        if (res?.newUser && res.googleData) {
+          setGoogleData(res.googleData);
+          setName(res.googleData.name);
+          setEmail(res.googleData.email);
+          setScreen("signup");
+        }
+      }
       catch (e: any) { Alert.alert("Error", e.message); }
       finally { setLoading(false); }
     };
@@ -46,9 +55,16 @@ export default function AuthScreen() {
   }, []);
 
   const handleSignUp = async () => {
-    if (!name || !email || !password) return Alert.alert("Fill in all fields");
+    if (!name || !email) return Alert.alert("Fill in all fields");
     setLoading(true);
-    try { await register(name, email, password); }
+    try {
+      if (googleData) {
+        await registerWithGoogle(name, email, googleData.googleId);
+      } else {
+        if (!password) return Alert.alert("Fill in all fields");
+        await register(name, email, password);
+      }
+    }
     catch (e: any) { Alert.alert("Error", e.message); }
     finally { setLoading(false); }
   };
@@ -100,9 +116,12 @@ export default function AuthScreen() {
           <TextInput style={s.input} placeholder="Your name" placeholderTextColor="#555"
             value={name} onChangeText={setName} autoCapitalize="words" />
           <TextInput style={s.input} placeholder="Email" placeholderTextColor="#555"
-            value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-          <TextInput style={s.input} placeholder="Password" placeholderTextColor="#555"
-            value={password} onChangeText={setPassword} secureTextEntry />
+            value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none"
+            editable={!googleData} />
+          {!googleData && (
+            <TextInput style={s.input} placeholder="Password" placeholderTextColor="#555"
+              value={password} onChangeText={setPassword} secureTextEntry />
+          )}
 
           <TouchableOpacity style={s.primaryBtn} onPress={handleSignUp} disabled={loading}>
             <Text style={s.primaryBtnText}>{loading ? "Creating account..." : "Create Account"}</Text>
