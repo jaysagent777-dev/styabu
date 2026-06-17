@@ -10,7 +10,7 @@ import { useAuth } from "../context/AuthContext";
 
 WebBrowser.maybeCompleteAuthSession();
 
-const GOOGLE_CLIENT_ID = "REPLACE_WITH_YOUR_GOOGLE_CLIENT_ID";
+const GOOGLE_CLIENT_ID = "899826716735-rn5cpog5aj1fmi9vplg1n81nt3uiaj0p.apps.googleusercontent.com";
 
 export default function AuthScreen() {
   const { login, register, loginWithGoogle } = useAuth();
