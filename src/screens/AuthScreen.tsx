@@ -23,6 +23,7 @@ export default function AuthScreen() {
   const [, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
     clientId: GOOGLE_CLIENT_ID,
     webClientId: GOOGLE_CLIENT_ID,
+    redirectUri: "https://styabu-production.up.railway.app",
   });
 
   React.useEffect(() => {
