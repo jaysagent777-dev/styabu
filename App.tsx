@@ -2,8 +2,9 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
-import { Text, View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, Platform, StyleSheet } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import FeedScreen from "./src/screens/FeedScreen";
 import GroupsScreen from "./src/screens/GroupsScreen";
@@ -60,35 +61,34 @@ function AppNavigator() {
 
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: "#0f0f1a",
-          borderTopColor: "#ffffff10",
-          paddingBottom: 8,
-          paddingTop: 8,
-          height: 64,
-        },
+        tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: "#a855f7",
-        tabBarInactiveTintColor: "#555",
-        tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
-      }}
+        tabBarInactiveTintColor: "#444",
+        tabBarShowLabel: false,
+        tabBarIcon: ({ focused, color, size }) => {
+          const icons: Record<string, [string, string]> = {
+            Feed:    ["bulb",        "bulb-outline"],
+            Groups:  ["people",      "people-outline"],
+            Profile: ["person",      "person-outline"],
+          };
+          const [active, inactive] = icons[route.name] ?? ["circle", "circle-outline"];
+          return (
+            <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+              <Ionicons
+                name={(focused ? active : inactive) as any}
+                size={22}
+                color={color}
+              />
+            </View>
+          );
+        },
+      })}
     >
-      <Tab.Screen
-        name="Feed"
-        component={FeedStackNavigator}
-        options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>💡</Text> }}
-      />
-      <Tab.Screen
-        name="Groups"
-        component={GroupsStackNavigator}
-        options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👥</Text> }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileStackNavigator}
-        options={{ tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👤</Text> }}
-      />
+      <Tab.Screen name="Feed"    component={FeedStackNavigator} />
+      <Tab.Screen name="Groups"  component={GroupsStackNavigator} />
+      <Tab.Screen name="Profile" component={ProfileStackNavigator} />
     </Tab.Navigator>
   );
 }
@@ -105,3 +105,34 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    position: "absolute",
+    bottom: Platform.OS === "ios" ? 24 : 16,
+    left: 40,
+    right: 40,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#16162a",
+    borderTopWidth: 0,
+    borderWidth: 1,
+    borderColor: "#ffffff12",
+    elevation: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    paddingBottom: 0,
+  },
+  iconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconWrapActive: {
+    backgroundColor: "#7c3aed22",
+  },
+});
